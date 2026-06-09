@@ -104,6 +104,168 @@ function toggleTeam() {
 }
 
 // ─────────────────────────────
+// SECURITY TIPS
+// ─────────────────────────────
+
+const TIPS = {
+
+  MALWARE: [
+    'Never download files or software from untrusted or unfamiliar websites.',
+    'Keep your antivirus software updated and run regular scans.',
+    'Avoid clicking links in unsolicited emails or messages — they may silently install malware.',
+    'Use a reputable ad blocker; malicious ads can trigger drive-by downloads.',
+    'Keep your OS and browser updated — patches close exploits malware relies on.',
+  ],
+
+  SOCIAL_ENGINEERING: [
+    'Legitimate websites never ask for your password via email or a popup.',
+    'Always check the full URL carefully — phishing sites mimic real ones with subtle typos.',
+    'Look for HTTPS and a valid padlock before entering any personal information.',
+    'When in doubt, go directly to the official website instead of clicking a link.',
+    'Enable two-factor authentication (2FA) so stolen passwords alone cannot access your accounts.',
+  ],
+
+  UNWANTED_SOFTWARE: [
+    'Only install software from official sources like verified app stores or developer sites.',
+    'Read permissions carefully before installing browser extensions or apps.',
+    'Regularly audit installed programs and remove anything you do not recognise.',
+    'Avoid "free" software bundles — they often include unwanted programs bundled silently.',
+    'Use a browser with built-in protection against unwanted software downloads.',
+  ],
+
+  POTENTIALLY_HARMFUL_APPLICATION: [
+    'Avoid sideloading apps from outside official stores unless you fully trust the source.',
+    'Check app reviews and publisher details before granting installation permissions.',
+    'Revoke unnecessary permissions for apps that request access to sensitive data.',
+    'Keep your device OS updated to protect against known app vulnerabilities.',
+    'Use a mobile security app to scan for potentially harmful applications.',
+  ],
+
+  general: [
+    'Use a password manager to generate and store strong, unique passwords.',
+    'Enable two-factor authentication on every account that supports it.',
+    'Regularly back up important data to an offline or encrypted cloud location.',
+    'Avoid using public Wi-Fi for banking or sensitive logins without a VPN.',
+    'Review your privacy settings on social media — oversharing aids social engineering.',
+    'Check "Have I Been Pwned" (haveibeenpwned.com) to see if your email was leaked.',
+    'Be sceptical of urgency — scammers manufacture time pressure to bypass your judgement.',
+    'Lock your devices with a strong PIN or biometric — physical access is a real threat.',
+    'Use a DNS-level blocker like 1.1.1.1 with filtering to block malicious domains.',
+    'Think before you click. Pause, inspect the URL, then decide.',
+  ],
+
+};
+
+// Tracks last shown general tip index to avoid repeats
+let lastGeneralTipIndex = -1;
+
+function getRandomTip(arr, lastIndex = -1) {
+  let index;
+  do {
+    index = Math.floor(Math.random() * arr.length);
+  } while (arr.length > 1 && index === lastIndex);
+  lastGeneralTipIndex = index;
+  return { tip: arr[index], index };
+}
+
+function buildTipsHtml(threatTypes) {
+
+  const isThreat = threatTypes && threatTypes.length > 0;
+
+  if (isThreat) {
+
+    // Collect unique tip sets for each detected threat type
+    const sections = [];
+
+    const threatLabels = {
+      MALWARE: { label: 'Malware', icon: '🦠' },
+      SOCIAL_ENGINEERING: { label: 'Phishing / Social Engineering', icon: '🎣' },
+      UNWANTED_SOFTWARE: { label: 'Unwanted Software', icon: '📦' },
+      POTENTIALLY_HARMFUL_APPLICATION: { label: 'Harmful Application', icon: '⚠️' },
+    };
+
+    threatTypes.forEach(threat => {
+      const tipPool = TIPS[threat];
+      if (!tipPool) return;
+
+      const meta = threatLabels[threat] || { label: threat, icon: '⚠️' };
+
+      // Pick 3 random non-repeating tips from the pool
+      const shuffled = [...tipPool].sort(() => Math.random() - 0.5).slice(0, 3);
+
+      sections.push(`
+        <div class="tips-threat-section">
+          <div class="tips-threat-label">
+            <span aria-hidden="true">${meta.icon}</span> ${meta.label} Tips
+          </div>
+          <ul class="tips-list" role="list">
+            ${shuffled.map(t => `<li role="listitem">${t}</li>`).join('')}
+          </ul>
+        </div>
+      `);
+    });
+
+    return `
+      <div class="tips-card danger-tips" role="region" aria-label="Safety tips for detected threats">
+        <div class="tips-header">
+          <span class="tips-header-icon" aria-hidden="true">🛡️</span>
+          <span class="tips-header-title">Stay Safe — What To Do Next</span>
+        </div>
+        <div class="tips-body">
+          ${sections.join('')}
+          <p class="tips-footer-note">Do <strong>not</strong> visit this URL. Report it to your IT team or via <a href="https://safebrowsing.google.com/safebrowsing/report_phish/" target="_blank" rel="noopener noreferrer">Google Safe Browsing Report</a>.</p>
+        </div>
+      </div>
+    `;
+
+  } else {
+
+    // Safe URL — show a random rotating general tip
+    const { tip } = getRandomTip(TIPS.general, lastGeneralTipIndex);
+
+    return `
+      <div class="tips-card safe-tips" role="region" aria-label="Cybersecurity awareness tip">
+        <div class="tips-header">
+          <span class="tips-header-icon" aria-hidden="true">💡</span>
+          <span class="tips-header-title">Cybersecurity Tip of the Scan</span>
+        </div>
+        <div class="tips-body">
+          <p class="tips-general-tip">${tip}</p>
+          <button type="button" class="tips-refresh-btn" onclick="refreshGeneralTip()" aria-label="Show another cybersecurity tip">
+            🔄 Show another tip
+          </button>
+        </div>
+      </div>
+    `;
+
+  }
+}
+
+function refreshGeneralTip() {
+  const { tip } = getRandomTip(TIPS.general, lastGeneralTipIndex);
+  const tipEl = document.querySelector('.tips-general-tip');
+  if (tipEl) {
+    tipEl.style.opacity = '0';
+    setTimeout(() => {
+      tipEl.textContent = tip;
+      tipEl.style.opacity = '1';
+    }, 200);
+  }
+}
+
+function showTips(threatTypes) {
+  const resultEl = document.getElementById('result');
+  if (!resultEl) return;
+
+  // Remove any existing tips card
+  const existing = resultEl.querySelector('.tips-card');
+  if (existing) existing.remove();
+
+  const tipsHtml = buildTipsHtml(threatTypes);
+  resultEl.insertAdjacentHTML('beforeend', tipsHtml);
+}
+
+// ─────────────────────────────
 // SCANNER
 // ─────────────────────────────
 
@@ -116,25 +278,7 @@ let dangerCount = 0;
 function isValidUrl(urlString) {
 
   try {
-    const urlObj = new URL(urlString);
-    const hostname = urlObj.hostname;
-
-    // To allow local testing
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return true;
-    }
-
-    const parts = hostname.split('.');
-    if (parts.length < 2) {
-      return false;
-    }
-
-    const tld = parts[parts.length - 1];
-    // TLD must be at least 2 chars & consist of only letters
-    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
-      return false;
-    }
-
+    new URL(urlString);
     return true;
   } catch (e) {
     return false;
@@ -165,15 +309,6 @@ function formatAndValidateUrl(input) {
     !url.startsWith('https://')
   ) {
     url = 'https://' + url;
-  }
-
-  // Validate URL length
-  if (url.length > 2048) {
-    return {
-      valid: false,
-      error: 'URL exceeds maximum length of 2048 characters.',
-      url: null
-    };
   }
 
   if (!isValidUrl(url)) {
@@ -301,7 +436,7 @@ function calculateRiskScore(url, isThreat) {
       score += 10;
       breakdown.push({ text: 'Excessive subdomains used', type: 'warning' });
     } else {
-      breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
+       breakdown.push({ text: 'Domain structure appears normal', type: 'safe' });
     }
   } catch (e) {
     score += 20;
@@ -391,12 +526,13 @@ function showResult(type, title, desc, url, threats) {
 
       <div class="result-icon" aria-hidden="true">
 
-        ${type === 'loading'
-      ? '<div class="spinner"></div>'
-      : type === 'scan-loading'
-        ? ''
-        : `<span>${icons[type]}</span>`
-    }
+        ${
+          type === 'loading'
+            ? '<div class="spinner"></div>'
+            : type === 'scan-loading'
+            ? ''
+            : `<span>${icons[type]}</span>`
+        }
 
       </div>
 
@@ -405,15 +541,9 @@ function showResult(type, title, desc, url, threats) {
         <div class="result-desc">${desc}</div>
         ${url ? `<div class="result-url" aria-label="Scanned URL: ${url}">${url}</div>` : ''}
         ${threats && threats.length
-<<<<<<< HEAD
-      ? `<div class="threat-tags">${threats.map(t =>
-        `<span class="threat-tag">${t}</span>`).join('')}</div>`
-      : ''}
-=======
           ? `<div class="threat-tags" role="list" aria-label="Detected threats">${threats.map(t =>
               `<span class="threat-tag" role="listitem">${t}</span>`).join('')}</div>`
           : ''}
->>>>>>> 43e5810 (feat: improve accessibility - ARIA labels, keyboard nav, screen reader support)
         ${(type === 'safe' || type === 'danger') ? `
           <div class="export-btns">
             <button type="button" onclick="downloadPDF()" class="export-btn export-btn-pdf" aria-label="Download scan report as PDF">⬇ Download PDF</button>
@@ -428,8 +558,8 @@ function showResult(type, title, desc, url, threats) {
   resultEl.focus();
 
   if (riskSectionHtml) {
-    // Append risk section after result card
-    resultEl.querySelector('.result-card').insertAdjacentHTML('beforeend', riskSectionHtml);
+    // Append risk section inside result div, after the result card
+    resultEl.insertAdjacentHTML('beforeend', riskSectionHtml);
 
     setTimeout(() => {
       const bar = document.querySelector('.risk-meter-bar');
@@ -612,6 +742,10 @@ async function checkSecurity() {
             <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, threats);
+
+      // Show threat-specific tips
+      showTips(allThreats);
+
     } else {
       updateStats('safe');
       const urlObj = new URL(url);
@@ -651,6 +785,9 @@ async function checkSecurity() {
             <b>Harmful App:</b> ${hasHarmful ? 'Detected!' : 'None detected'}
           </div>
         </div>`, url, []);
+
+      // Show rotating general tip
+      showTips([]);
     }
 
   } catch (err) {
