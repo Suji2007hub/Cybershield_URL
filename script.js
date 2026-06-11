@@ -558,13 +558,8 @@ function showResult(type, title, desc, url, threats) {
   resultEl.focus();
 
   if (riskSectionHtml) {
-<<<<<<< HEAD
     // Append risk section inside result div, after the result card
     resultEl.insertAdjacentHTML('beforeend', riskSectionHtml);
-=======
-    // Append risk section after result card
-    resultEl.querySelector('.result-card').insertAdjacentHTML('beforeend', riskSectionHtml);
->>>>>>> 43e5810 (feat: improve accessibility - ARIA labels, keyboard nav, screen reader support)
 
     setTimeout(() => {
       const bar = document.querySelector('.risk-meter-bar');
